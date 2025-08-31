@@ -325,7 +325,7 @@ if crop_model:
             k_sms = st.number_input("K", 0, 200, 50, key="k_sms")
             ph_sms = st.number_input("pH", 0.0, 14.0, 7.0, 0.1, key="ph_sms")
 
-        if st.button(T.get("button_send_sms"), use_container_width=True):
+        if st.button(T.get("button_send_sms", "Send SMS"), use_container_width=True):
             if phone and len(phone) == 10:
                 with st.spinner("Sending SMS..."):
                     features = [n_sms, p_sms, k_sms, 26.0, 80.0, ph_sms, 120.0]
@@ -335,7 +335,7 @@ if crop_model:
                         templates = {
                             'en': f"SmartAgro AI Alert for +91-{phone}: Based on your soil, the best crop is **{crop_name}**. Visit your local kiosk for a full plan.",
                             'kn': f"+91-{phone} ಸಂಖ್ಯೆಗೆ ಸ್ಮಾರ್ಟ್ ಆಗ್ರೋ AI ಸಂದೇಶ: ನಿಮ್ಮ ಮಣ್ಣಿನ ಪ್ರಕಾರ, ಉತ್ತಮ ಬೆಳೆ **{crop_name}**. ಪೂರ್ಣ ಯೋಜನೆಗಾಗಿ ನಿಮ್ಮ ಸ್ಥಳೀಯ ಕಿಯೋಸ್ಕ್ಗೆ ಭೇಟಿ ನೀಡಿ.",
-                            'hi': f"+91-{phone} के लिए स्मार्ट एग्रो AI अलर्ट: आपकी मिट्टी के आधार पर, सबसे अच्छी फसल **{crop_name}** है। पूरी योजना के लिए अपने स्थानीय कियोस्क पर जाएँ।"
+                            'hi': f"+91-{phone} के लिए स्मार्ट एग्रೋ AI अलर्ट: आपकी मिट्टी के आधार पर, सबसे अच्छी फसल **{crop_name}** है। पूरी योजना के लिए अपने स्थानीय कियोस्क पर जाएँ।"
                         }
                         st.success(T.get("sms_sent_success"))
                         st.info(templates[lang_code])
