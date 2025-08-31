@@ -17,7 +17,7 @@ st.set_page_config(page_title="SmartAgro AI", page_icon="🌱", layout="wide")
 def load_crop_model():
     """Load the crop recommendation model safely."""
     try:
-        model = joblib.load('models/crop_model.pkl')
+        model = joblib.load('crop_model.pkl')
         return model
     except FileNotFoundError:
         return None
