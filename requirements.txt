@@ -1,0 +1,10 @@
+pandas
+scikit-learn==1.3.0 
+joblib
+flask
+requests
+streamlit
+Pillow
+tensorflow
+numpy
+werkzeug
