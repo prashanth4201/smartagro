@@ -100,7 +100,7 @@ def predict_crop_and_plan(crop_model, data, lang):
         st.error("Crop model is not loaded. Cannot get a recommendation.")
         return None
     prediction_result = crop_model.predict([data])[0]
-    action_plan = CROP_ACTION_PLANS.get(lang, {}).get(prediction_result.lower(), {})
+    action_plan = CROP_ACTION_PLANS.get(lang, CROP_ACTION_PLANS['en']).get(prediction_result.lower(), {})
     n_diff, p_diff = 90 - data[0], 42 - data[1]
     rec_urea, rec_dap = 50 + (n_diff / 10) * 5, 50 + (p_diff / 10) * 2.5
     
@@ -115,7 +115,7 @@ def predict_crop_and_plan(crop_model, data, lang):
 def diagnose_threat(lang):
     threats = ["fall_armyworm", "leaf_blight", "amaranthus_viridis"]
     t = random.choice(threats)
-    info = THREAT_DATABASE.get(lang, {}).get(t, {"type": "Unknown", "solution": "No solution."})
+    info = THREAT_DATABASE.get(lang, THREAT_DATABASE['en']).get(t, {"type": "Unknown", "solution": "No solution."})
     return {'threat_name': t.replace('_', ' ').title(), 'threat_type': info['type'], 'recommended_action': info['solution']}
 
 def get_watering_advice(soil_type, lang):
@@ -253,9 +253,9 @@ if crop_model:
                         revenue = crop_info['yield_per_acre'] * crop_info['market_price_per_quintal']
                         st.subheader(T.get("subheader_results", "Results"))
                         col1, col2, col3 = st.columns(3)
-                        col1.metric(T.get("metric_yield"), f"{crop_info['yield_per_acre']} Quintals/Acre")
-                        col2.metric(T.get("metric_price"), f"₹{crop_info['market_price_per_quintal']:,}/Quintal")
-                        col3.metric(T.get("metric_revenue"), f"₹{revenue:,.2f} / Acre")
+                        col1.metric(T.get("metric_yield", "Yield"), f"{crop_info['yield_per_acre']} Quintals/Acre")
+                        col2.metric(T.get("metric_price", "Price"), f"₹{crop_info['market_price_per_quintal']:,}/Quintal")
+                        col3.metric(T.get("metric_revenue", "Revenue"), f"₹{revenue:,.2f} / Acre")
         else:
             st.warning(T.get("warning_no_crop", "Get a crop recommendation first."))
 
