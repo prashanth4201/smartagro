@@ -1,138 +1,161 @@
 # smartagro_app.py
-# Final merged version for GitHub deploy
 
-import os
 import streamlit as st
 from PIL import Image
 import joblib
 import numpy as np
-import pandas as pd
 import random
 from datetime import datetime, timedelta
+import os
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="SmartAgro AI", page_icon="🌱", layout="wide")
 
-# --- AI MODEL LOADING ---
-@st.cache_resource
-def load_crop_model():
-    """Load the crop recommendation model safely."""
-    try:
-        model = joblib.load("crop_model.pkl")   # ✅ no models/ folder
-        return model
-    except Exception:
-        st.warning("⚠️ crop_model.pkl not found. Using fallback dummy model.")
-        class DummyModel:
-            def predict(self, X): return ["rice"]
-        return DummyModel()
-
-crop_model = load_crop_model()
-
-# --- LANGUAGE MAP ---
+# --- LANGUAGE OPTIONS ---
 LANGUAGES = {
     "English": "en",
     "ಕನ್ನಡ (Kannada)": "kn",
     "हिन्दी (Hindi)": "hi"
 }
 
-# --- KNOWLEDGE BASES ---
-CROP_ACTION_PLANS = {
-    # keep your multilingual action plan dict here ...
-}
-CROP_DATA = {
-    "rice": {"yield_per_acre": 22, "market_price_per_quintal": 2050, "maturity_days": 120},
-    "maize": {"yield_per_acre": 25, "market_price_per_quintal": 2100, "maturity_days": 100},
-    "pigeonpeas": {"yield_per_acre": 8, "market_price_per_quintal": 6500, "maturity_days": 150},
-    "coffee": {"yield_per_acre": 4, "market_price_per_quintal": 15000, "maturity_days": 365}
-}
-THREAT_DATABASE = {
-    # keep your threats dict here ...
-}
+# --- TEXTS (always keep English as fallback) ---
 TEXT = {
-    # keep your multilingual TEXT dict here ...
+    "en": {
+        "title": "SmartAgro AI – Your Farm's Smart Assistant",
+        "welcome": "Welcome! Use our AI tools for smarter farming decisions.",
+        "tab_crop": "🌾 Crop Recommendation",
+        "tab_health_diagnosis": "🌿 Field Health Diagnosis",
+        "tab_profit": "💰 Profit Forecast",
+        "tab_water": "💧 AI Water Advisor",
+        "tab_harvest": "📈 Harvest Advisor",
+        "tab_wellness": "💚 Wellness Tips",
+        "tab_sms": "📱 SMS/IVR Demo",
+        "header_crop": "Find the Perfect Crop & Get a Cultivation Guide",
+        "uploader_soil": "Upload Soil Image",
+        "button_analyze_soil": "Analyze Soil",
+        "header_health": "AI Field Doctor",
+        "uploader_health": "Upload plant image",
+        "button_diagnose": "Diagnose Now",
+        "header_profit": "Profit Forecast",
+        "button_forecast": "Calculate Forecast for {crop}",
+        "header_water": "Water Advisor",
+        "button_water_advice": "Get Water Advice",
+        "header_harvest": "Harvest Advisor",
+        "button_harvest_advice": "Get Harvest Advice",
+        "header_wellness": "Wellness Tips",
+        "header_sms_demo": "SMS/IVR Demo",
+        "button_send_sms": "Simulate SMS"
+    },
+    "kn": {},  # Kannada translations can be filled later
+    "hi": {}   # Hindi translations can be filled later
 }
 
-# --- AI LOGIC FUNCTIONS ---
+# --- LOAD MODEL ---
+@st.cache_resource
+def load_crop_model():
+    try:
+        if os.path.exists("crop_model.pkl"):
+            model = joblib.load("crop_model.pkl")
+            return model
+        else:
+            st.warning("⚠️ crop_model.pkl not found in repo root. Using fallback dummy model.")
+            class DummyModel:
+                def predict(self, X): return ["rice"]
+            return DummyModel()
+    except Exception as e:
+        st.error(f"Fatal Error loading crop_model.pkl → {e}")
+        class DummyModel:
+            def predict(self, X): return ["rice"]
+        return DummyModel()
+
+crop_model = load_crop_model()
+
+# --- SIMPLE AI FUNCTIONS ---
 def analyze_soil_image(image_file):
     with Image.open(image_file) as img:
-        avg_color = np.array(img.convert('RGB')).mean(axis=(0, 1))
+        avg_color = np.array(img.convert("RGB")).mean(axis=(0, 1))
         brightness = sum(avg_color) / 3
-        if brightness < 80: return {"soil_type": "Clay Loam", "organic_matter_estimate": "High"}
-        elif brightness < 140: return {"soil_type": "Loamy Soil", "organic_matter_estimate": "Moderate"}
-        else: return {"soil_type": "Sandy Soil", "organic_matter_estimate": "Low"}
+        if brightness < 80:
+            return {"soil_type": "Clay Loam", "organic_matter": "High"}
+        elif brightness < 140:
+            return {"soil_type": "Loamy Soil", "organic_matter": "Moderate"}
+        else:
+            return {"soil_type": "Sandy Soil", "organic_matter": "Low"}
 
-def predict_crop_and_plan(data, lang):
-    prediction_result = crop_model.predict([data])[0]
-    action_plan = CROP_ACTION_PLANS.get(lang, {}).get(prediction_result.lower(), {})
-    return {'recommended_crop': prediction_result, 'action_plan': action_plan}
+def predict_crop(data):
+    return crop_model.predict([data])[0]
 
-def diagnose_threat(lang):
-    threats = ["fall_armyworm", "leaf_blight", "amaranthus_viridis"]
-    identified_threat_key = random.choice(threats)
-    threat_info = THREAT_DATABASE.get(lang, {}).get(identified_threat_key, {"type": "Unknown", "solution": "No solution found."})
-    return {'threat_name': identified_threat_key.replace('_', ' ').title(), 'threat_type': threat_info['type'], 'recommended_action': threat_info['solution']}
+def get_watering_advice():
+    return random.choice([
+        "No watering needed today (rain expected).",
+        "Water for 20 minutes in the morning.",
+        "Deep watering for 45 minutes recommended."
+    ])
 
-def get_watering_advice(soil_type, lang):
-    weather = {"temp": round(random.uniform(24.0, 32.0), 1), "humidity": random.randint(55, 85), "forecast": random.choice(["Sunny", "Cloudy", "Chance of Rain"])}
-    return {"weather": weather, "advice": "Normal watering advice"}  # simplify for now
-
-def get_harvest_advice(crop_name, sowing_date, lang):
-    maturity_days = CROP_DATA.get(crop_name.lower(), {}).get("maturity_days", 100)
-    harvest_date = sowing_date + timedelta(days=maturity_days)
-    return {"harvest_window": f"{harvest_date.strftime('%d %b, %Y')}", "market_outlook": "Stable", "weather_outlook": "Clear", "advice": "Harvest at your convenience"}
+def get_harvest_advice():
+    return random.choice([
+        "Harvest in the next 3 days to avoid rain.",
+        "Wait 1 more week for better market prices.",
+        "Harvest anytime in the next 10 days."
+    ])
 
 # --- APP LAYOUT ---
-if crop_model is None:
-    st.error("Fatal Error: Crop recommendation model not loaded.")
-else:
-    st.sidebar.title("Language / ಭಾಷೆ / भाषा")
-    lang_display = st.sidebar.selectbox("", list(LANGUAGES.keys()))
-    lang_code = LANGUAGES.get(lang_display, "en")   # ✅ safe fallback
-    T = TEXT.get(lang_code, TEXT["en"])             # ✅ safe fallback
+st.sidebar.title("🌍 Language")
+lang_display = st.sidebar.selectbox("", list(LANGUAGES.keys()))
+lang_code = LANGUAGES[lang_display]
 
-    st.title(T.get("title", "SmartAgro AI"))
-    st.markdown(T.get("welcome", "Welcome! Use our AI tools for smarter farming decisions."))
+# ✅ Always fallback to English safely
+T = TEXT.get(lang_code) or TEXT["en"]
 
-    tab_keys = ["tab_crop", "tab_health_diagnosis", "tab_profit", "tab_water", "tab_harvest", "tab_wellness", "tab_sms"]
-    tabs = st.tabs([T.get(key, key.replace('_', ' ').title()) for key in tab_keys])
+st.title(T["title"])
+st.write(T["welcome"])
 
-    with tabs[0]: # Crop Recommendation
-        st.header(T.get("header_crop", "Find the Perfect Crop"))
-        soil_image = st.file_uploader(T.get("uploader_soil", "Upload Soil Image"), type=["jpg", "jpeg", "png"], key="soil_upload")
-        if soil_image:
-            st.image(soil_image, caption='Your Soil', width=300)
-            if st.button(T.get("button_analyze_soil", "Analyze Soil"), key="analyze_soil_btn"):
-                st.session_state.soil_analysis_result = analyze_soil_image(soil_image)
+tabs = st.tabs([
+    T["tab_crop"], T["tab_health_diagnosis"], T["tab_profit"],
+    T["tab_water"], T["tab_harvest"], T["tab_wellness"], T["tab_sms"]
+])
 
-    with tabs[1]: # Field Health Diagnosis
-        st.header(T.get("header_health", "Field Health Diagnosis"))
-        uploaded_file = st.file_uploader(T.get("uploader_health", "Upload plant image"), type=["jpg", "jpeg", "png"], key="health_upload")
-        if uploaded_file and st.button(T.get("button_diagnose", "Diagnose Now"), key="diagnose_btn"):
-            result = diagnose_threat(lang_code)
-            st.success(f"{result['threat_name']} → {result['recommended_action']}")
+# --- CROP RECOMMENDATION TAB ---
+with tabs[0]:
+    st.header(T["header_crop"])
+    soil_img = st.file_uploader(T["uploader_soil"], type=["jpg","jpeg","png"])
+    if soil_img and st.button(T["button_analyze_soil"], key="analyze_soil"):
+        res = analyze_soil_image(soil_img)
+        st.success(f"Soil type: **{res['soil_type']}**, Organic Matter: **{res['organic_matter']}**")
 
-    with tabs[2]: # Profit Forecast
-        st.header(T.get("header_profit", "Profit Forecast"))
-        if st.button(T.get("button_forecast", "Calculate Forecast").format(crop="Rice"), key="forecast_btn"):
-            st.success("Example forecast here...")
+# --- FIELD HEALTH TAB ---
+with tabs[1]:
+    st.header(T["header_health"])
+    health_img = st.file_uploader(T["uploader_health"], type=["jpg","jpeg","png"])
+    if health_img and st.button(T["button_diagnose"], key="diagnose"):
+        st.info("Threat detected: Fall Armyworm 🐛 → Use pheromone traps.")
 
-    with tabs[3]: # Water Advisor
-        st.header(T.get("header_water", "Water Advisor"))
-        if st.button(T.get("button_water_advice", "Get Water Advice"), key="water_btn"):
-            st.success("Normal watering needed")
+# --- PROFIT FORECAST TAB ---
+with tabs[2]:
+    st.header(T["header_profit"])
+    if st.button(T["button_forecast"].format(crop="Rice"), key="forecast"):
+        st.success("Estimated Revenue: ₹45,000 per acre.")
 
-    with tabs[4]: # Harvest Advisor
-        st.header(T.get("header_harvest", "Harvest Advisor"))
-        sowing_date = st.date_input("Sowing Date", datetime.now() - timedelta(days=60))
-        if st.button(T.get("button_harvest_advice", "Get Harvest Advice"), key="harvest_btn"):
-            result = get_harvest_advice("rice", sowing_date, lang_code)
-            st.success(result['advice'])
+# --- WATER ADVISOR TAB ---
+with tabs[3]:
+    st.header(T["header_water"])
+    if st.button(T["button_water_advice"], key="water"):
+        st.success(get_watering_advice())
 
-    with tabs[5]: # Wellness Tips
-        st.header(T.get("header_wellness", "Wellness Tips"))
-        st.write("Add soil, water and pest wellness tips...")
+# --- HARVEST ADVISOR TAB ---
+with tabs[4]:
+    st.header(T["header_harvest"])
+    if st.button(T["button_harvest_advice"], key="harvest"):
+        st.success(get_harvest_advice())
 
-    with tabs[6]: # SMS/IVR Demo
-        st.header(T.get("header_sms_demo", "SMS/IVR Demo"))
-        if st.button(T.get("button_send_sms", "Simulate SMS"), key="sms_btn"):
-            st.success("SMS Sent Successfully!")
+# --- WELLNESS TIPS TAB ---
+with tabs[5]:
+    st.header(T["header_wellness"])
+    st.markdown("- Add compost regularly\n- Rotate crops\n- Use neem oil spray")
+
+# --- SMS DEMO TAB ---
+with tabs[6]:
+    st.header(T["header_sms_demo"])
+    phone = st.text_input("📞 Enter phone number", "9876543210", max_chars=10)
+    if st.button(T["button_send_sms"], key="sms"):
+        st.success(f"SMS sent to {phone}: Best crop for your soil is Rice 🌾")
