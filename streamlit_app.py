@@ -303,20 +303,20 @@ if crop_model:
 
     with tabs[5]: # Wellness Tips
         st.header(T.get("header_wellness"))
-        st.markdown(T.get("wellness_intro"))
-        st.subheader(T.get("wellness_soil_header"))
+        st.markdown(T.get("wellness_intro", ""))
+        st.subheader(T.get("wellness_soil_header", ""))
         for point in T.get("wellness_soil_points", []): st.markdown(point)
-        st.subheader(T.get("wellness_water_header"))
+        st.subheader(T.get("wellness_water_header", ""))
         for point in T.get("wellness_water_points", []): st.markdown(point)
-        st.subheader(T.get("wellness_pest_header"))
+        st.subheader(T.get("wellness_pest_header", ""))
         for point in T.get("wellness_pest_points", []): st.markdown(point)
         
     with tabs[6]: # SMS/IVR Demo
         st.header(T.get("header_sms_demo"))
-        st.markdown(T.get("subheader_sms_demo"))
+        st.markdown(T.get("subheader_sms_demo", ""))
         st.subheader(T.get("ivr_title"))
-        phone = st.text_input(T.get("phone_input_label"), "9988776655", max_chars=10)
-        st.markdown(T.get("ivr_instructions"))
+        phone = st.text_input(T.get("phone_input_label", "Phone Number"), "9988776655", max_chars=10)
+        st.markdown(T.get("ivr_instructions", ""))
         col1, col2 = st.columns(2)
         with col1:
             n_sms = st.number_input("N", 0, 200, 100, key="n_sms")
