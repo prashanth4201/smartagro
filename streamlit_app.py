@@ -169,8 +169,8 @@ if 'soil_analysis_result' not in st.session_state: st.session_state.soil_analysi
 if 'crop_recommendation_result' not in st.session_state: st.session_state.crop_recommendation_result = None
 
 # Main panel
-st.title(T.get("title"))
-st.markdown(T.get("welcome"))
+st.title(T.get("title", "SmartAgro AI"))
+st.markdown(T.get("welcome", "Welcome!"))
 
 # Only proceed if the model was loaded successfully
 if crop_model:
@@ -178,22 +178,22 @@ if crop_model:
     tabs = st.tabs([T.get(key, key.replace('_', ' ').title()) for key in tab_keys])
 
     with tabs[0]: # Crop Recommendation
-        st.header(T.get("header_crop"))
+        st.header(T.get("header_crop", "Crop Recommendation"))
         if not st.session_state.soil_analysis_done:
             st.subheader(T.get("subheader_crop_step1", "Step 1: Upload a Photo of Your Soil"))
             soil_image = st.file_uploader(T.get("uploader_soil", "Upload Soil Image"), type=["jpg", "jpeg", "png"], key="soil_uploader")
             if soil_image:
                 st.image(soil_image, caption='Your Soil', width=300)
-                if st.button(T.get("button_analyze_soil"), use_container_width=True):
-                    with st.spinner(T.get("spinner_soil")):
+                if st.button(T.get("button_analyze_soil", "Analyze Soil"), use_container_width=True):
+                    with st.spinner(T.get("spinner_soil", "Analyzing...")):
                         st.session_state.soil_analysis_result = analyze_soil_image(soil_image)
                         st.session_state.soil_analysis_done = True
                         st.rerun()
         if st.session_state.soil_analysis_done:
-            st.subheader(T.get("subheader_crop_step2"))
+            st.subheader(T.get("subheader_crop_step2", "Step 2: Add Details"))
             result = st.session_state.soil_analysis_result
             if result and 'error' not in result:
-                st.info(T.get("info_soil_analysis").format(soil_type=result['soil_type'], organic_matter=result['organic_matter_estimate']))
+                st.info(T.get("info_soil_analysis", "Soil Analysis: {soil_type}, {organic_matter}").format(soil_type=result['soil_type'], organic_matter=result['organic_matter_estimate']))
             
             col1, col2 = st.columns(2)
             with col1:
@@ -206,42 +206,42 @@ if crop_model:
                 ph = st.number_input("Soil pH", 0.0, 14.0, 6.5, 0.1)
                 rain = st.number_input("Rainfall (mm)", 0.0, 500.0, 100.0, 0.1)
 
-            if st.button(T.get("button_get_plan"), use_container_width=True, type="primary"):
-                with st.spinner(T.get("spinner_plan")):
+            if st.button(T.get("button_get_plan", "Get Plan"), use_container_width=True, type="primary"):
+                with st.spinner(T.get("spinner_plan", "Generating...")):
                     features = [n, p, k, temp, hum, ph, rain]
                     st.session_state.crop_recommendation_result = predict_crop_and_plan(crop_model, features, lang_code)
             
             if st.session_state.crop_recommendation_result:
                 res = st.session_state.crop_recommendation_result
-                st.success(T.get("success_crop").format(crop=res['recommended_crop'].title()))
-                st.subheader(T.get("subheader_plan").format(crop=res['recommended_crop'].title()))
+                st.success(T.get("success_crop", "Success! Best crop is: {crop}").format(crop=res['recommended_crop'].title()))
+                st.subheader(T.get("subheader_plan", "Action Plan for {crop}").format(crop=res['recommended_crop'].title()))
                 if 'action_plan' in res:
                     for step, details in res['action_plan'].items():
                         with st.expander(f"**{step}**"):
                             for point in details: st.markdown(point)
             
-            if st.button(T.get("button_start_over")):
+            if st.button(T.get("button_start_over", "Start Over")):
                 st.session_state.soil_analysis_done = False
                 st.session_state.soil_analysis_result = None
                 st.session_state.crop_recommendation_result = None
                 st.rerun()
 
     with tabs[1]: # Field Health Diagnosis
-        st.header(T.get("header_health"))
+        st.header(T.get("header_health", "Field Health Diagnosis"))
         uploaded_file = st.file_uploader(T.get("uploader_health", "Upload an image of the threat"), type=["jpg", "jpeg", "png"], key="health_uploader")
         if uploaded_file:
             st.image(uploaded_file, caption='Image for Analysis', use_column_width=True)
-            if st.button(T.get("button_diagnose"), use_container_width=True, type="primary"):
+            if st.button(T.get("button_diagnose", "Diagnose"), use_container_width=True, type="primary"):
                 with st.spinner('Your AI Field Doctor is analyzing the image...'):
                     result = diagnose_threat(lang_code)
-                    st.subheader(T.get("diagnosis_result"))
+                    st.subheader(T.get("diagnosis_result", "Diagnosis"))
                     col1, col2 = st.columns(2)
-                    col1.metric(T.get("threat_name"), result['threat_name'])
-                    col2.metric(T.get("threat_type"), result['threat_type'])
-                    st.success(f"**{T.get('threat_action')}:** {result['recommended_action']}")
+                    col1.metric(T.get("threat_name", "Threat"), result['threat_name'])
+                    col2.metric(T.get("threat_type", "Type"), result['threat_type'])
+                    st.success(f"**{T.get('threat_action', 'Action')}:** {result['recommended_action']}")
 
     with tabs[2]: # Profit Forecast
-        st.header(T.get("header_profit"))
+        st.header(T.get("header_profit", "Profit Forecast"))
         st.markdown(T.get("subheader_profit", "Get an estimate of your potential earnings."))
         if st.session_state.crop_recommendation_result:
             crop = st.session_state.crop_recommendation_result['recommended_crop']
@@ -251,58 +251,58 @@ if crop_model:
                     crop_info = CROP_DATA.get(crop.lower())
                     if crop_info:
                         revenue = crop_info['yield_per_acre'] * crop_info['market_price_per_quintal']
-                        st.subheader(T.get("subheader_results"))
+                        st.subheader(T.get("subheader_results", "Results"))
                         col1, col2, col3 = st.columns(3)
                         col1.metric(T.get("metric_yield"), f"{crop_info['yield_per_acre']} Quintals/Acre")
                         col2.metric(T.get("metric_price"), f"₹{crop_info['market_price_per_quintal']:,}/Quintal")
                         col3.metric(T.get("metric_revenue"), f"₹{revenue:,.2f} / Acre")
         else:
-            st.warning(T.get("warning_no_crop"))
+            st.warning(T.get("warning_no_crop", "Get a crop recommendation first."))
 
     with tabs[3]: # Water Advisor
-        st.header(T.get("header_water"))
-        st.markdown(T.get("subheader_water"))
+        st.header(T.get("header_water", "Water Advisor"))
+        st.markdown(T.get("subheader_water", "Get a daily irrigation schedule."))
         if st.session_state.soil_analysis_result and st.session_state.soil_analysis_result.get('soil_type'):
             soil_type = st.session_state.soil_analysis_result['soil_type']
             st.info(f"Using your analyzed soil type: **{soil_type}**")
-            if st.button(T.get("button_water_advice"), use_container_width=True, type="primary"):
+            if st.button(T.get("button_water_advice", "Get Today's Advice"), use_container_width=True, type="primary"):
                 with st.spinner("Checking real-time weather..."):
                     result = get_watering_advice(soil_type, lang_code)
                     weather, advice = result['weather'], result['advice']
-                    st.subheader(T.get("subheader_weather_sim"))
+                    st.subheader(T.get("subheader_weather_sim", "Today's Weather"))
                     col1, col2, col3 = st.columns(3)
                     col1.metric("Temperature", f"{weather['temp']} °C")
                     col2.metric("Humidity", f"{weather['humidity']} %")
                     col3.metric("Forecast", weather['forecast'])
-                    st.subheader(T.get("subheader_advice"))
+                    st.subheader(T.get("subheader_advice", "Recommendation"))
                     st.success(f"**{advice}**")
         else:
-            st.warning(T.get("warning_no_soil"))
+            st.warning(T.get("warning_no_soil", "Analyze soil first."))
     
     with tabs[4]: # Harvest Advisor
-        st.header(T.get("header_harvest"))
-        st.markdown(T.get("subheader_harvest"))
+        st.header(T.get("header_harvest", "Harvest Advisor"))
+        st.markdown(T.get("subheader_harvest", "Get strategic harvest advice."))
         if st.session_state.crop_recommendation_result:
             crop = st.session_state.crop_recommendation_result['recommended_crop']
             st.info(f"Get harvest advice for your recommended crop: **{crop.title()}**")
-            sowing_date = st.date_input(T.get("sowing_date_label"), datetime.now() - timedelta(days=60))
-            if st.button(T.get("button_harvest_advice"), use_container_width=True, type="primary"):
+            sowing_date = st.date_input(T.get("sowing_date_label", "Sowing Date"), datetime.now() - timedelta(days=60))
+            if st.button(T.get("button_harvest_advice", "Get Harvest Advice"), use_container_width=True, type="primary"):
                 with st.spinner("Analyzing forecasts..."):
                     result = get_harvest_advice(crop, sowing_date, lang_code)
-                    st.subheader(T.get("harvest_window_header"))
+                    st.subheader(T.get("harvest_window_header", "Harvest Window"))
                     st.info(result['harvest_window'])
                     col1, col2 = st.columns(2)
-                    col1.subheader(T.get("market_outlook_header"))
+                    col1.subheader(T.get("market_outlook_header", "Market Outlook"))
                     col1.write(result['market_outlook'])
-                    col2.subheader(T.get("weather_outlook_header"))
+                    col2.subheader(T.get("weather_outlook_header", "Weather Outlook"))
                     col2.write(result['weather_outlook'])
-                    st.subheader(T.get("final_advice_header"))
+                    st.subheader(T.get("final_advice_header", "Final Advice"))
                     st.success(f"**{result['advice']}**")
         else:
-            st.warning(T.get("warning_no_crop"))
+            st.warning(T.get("warning_no_crop", "Get a crop recommendation first."))
 
     with tabs[5]: # Wellness Tips
-        st.header(T.get("header_wellness"))
+        st.header(T.get("header_wellness", "Wellness Tips"))
         st.markdown(T.get("wellness_intro", ""))
         st.subheader(T.get("wellness_soil_header", ""))
         for point in T.get("wellness_soil_points", []): st.markdown(point)
@@ -312,9 +312,9 @@ if crop_model:
         for point in T.get("wellness_pest_points", []): st.markdown(point)
         
     with tabs[6]: # SMS/IVR Demo
-        st.header(T.get("header_sms_demo"))
+        st.header(T.get("header_sms_demo", "SMS/IVR Demo"))
         st.markdown(T.get("subheader_sms_demo", ""))
-        st.subheader(T.get("ivr_title"))
+        st.subheader(T.get("ivr_title", "Simulate IVR"))
         phone = st.text_input(T.get("phone_input_label", "Phone Number"), "9988776655", max_chars=10)
         st.markdown(T.get("ivr_instructions", ""))
         col1, col2 = st.columns(2)
@@ -337,8 +337,8 @@ if crop_model:
                             'kn': f"+91-{phone} ಸಂಖ್ಯೆಗೆ ಸ್ಮಾರ್ಟ್ ಆಗ್ರೋ AI ಸಂದೇಶ: ನಿಮ್ಮ ಮಣ್ಣಿನ ಪ್ರಕಾರ, ಉತ್ತಮ ಬೆಳೆ **{crop_name}**. ಪೂರ್ಣ ಯೋಜನೆಗಾಗಿ ನಿಮ್ಮ ಸ್ಥಳೀಯ ಕಿಯೋಸ್ಕ್ಗೆ ಭೇಟಿ ನೀಡಿ.",
                             'hi': f"+91-{phone} के लिए स्मार्ट एग्रೋ AI अलर्ट: आपकी मिट्टी के आधार पर, सबसे अच्छी फसल **{crop_name}** है। पूरी योजना के लिए अपने स्थानीय कियोस्क पर जाएँ।"
                         }
-                        st.success(T.get("sms_sent_success"))
+                        st.success(T.get("sms_sent_success", "SMS Sent!"))
                         st.info(templates[lang_code])
             else:
-                st.error(T.get("error_phone_number"))
+                st.error(T.get("error_phone_number", "Invalid phone number."))
 
